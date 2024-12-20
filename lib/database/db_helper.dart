@@ -57,7 +57,7 @@ class DatabaseHelper {
        CREATE TABLE queue_tb (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     queue_number INTEGER NOT NULL,
-    customer_name TEXT NOT NULL,
+    customer_name TEXT  NULL,
     customer_phone TEXT,
     queue_status TEXT NOT NULL,
     queue_datetime TEXT,
