@@ -52,21 +52,22 @@ class SidebarMenu extends StatelessWidget {
                 ],
               ),
             ),
-            ListTile(
+             ListTile(
               leading: const Icon(Icons.home, color: Color.fromRGBO(9, 159, 175, 1.0),),
               title: const Text(
-                'หน้าแรก',
+                'Home',
                 style: TextStyle(fontSize: 18),
               ),
               onTap: () {
                 Navigator.pop(context); // ปิด Drawer
+
               },
             ),
             const Divider(thickness: 1, indent: 16, endIndent: 16), // เส้นแบ่ง
             ListTile(
               leading: const Icon(Icons.queue, color: Color.fromRGBO(9, 159, 175, 1.0),),
               title: const Text(
-                'รายการคิว',
+                'Queue',
                 style: TextStyle(fontSize: 18),
               ),
               onTap: () {
@@ -81,7 +82,7 @@ class SidebarMenu extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.miscellaneous_services, color: Color.fromRGBO(9, 159, 175, 1.0),),
               title: const Text(
-                'ตั้งค่าservis',
+                'Service',
                 style: TextStyle(fontSize: 18),
               ),
               onTap: () {
@@ -92,26 +93,12 @@ class SidebarMenu extends StatelessWidget {
               );
               },
             ),
-            const Divider(thickness: 1, indent: 16, endIndent: 16), // เส้นแบ่ง
-           ListTile(
-              leading: const Icon(Icons.print, color: Colors.deepPurple),
-              title: const Text(
-                'Printer Setting',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () {
-              Navigator.pop(context); // ปิด Drawer
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => const SettingScreen()), // ไปยังหน้าการตั้งค่า
-              // );
-            },
-            ),
+           
             const Divider(thickness: 1, indent: 16, endIndent: 16), // เส้นแบ่ง
             ListTile(
-              leading: const Icon(Icons.queue, color: Color.fromRGBO(9, 159, 175, 1.0),),
+              leading: const Icon(Icons.print, color: Color.fromRGBO(9, 159, 175, 1.0),),
               title: const Text(
-                'ปริ้น',
+                'Print settings',
                 style: TextStyle(fontSize: 18),
               ),
               onTap: () {
@@ -122,24 +109,25 @@ class SidebarMenu extends StatelessWidget {
               );
               },
             ),
+            //  ListTile(
+            //   leading: const Icon(Icons.queue, color: Color.fromRGBO(9, 159, 175, 1.0),),
+            //   title: const Text(
+            //     'Status',
+            //     style: TextStyle(fontSize: 18),
+            //   ),
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //      Navigator.push(
+            //     context,
+            //     MaterialPageRoute(builder: (context) =>  AddStatusPage()), // ไปยังหน้าการตั้งค่า
+            //   );
+            //   },
+            // ),
+            const Divider(thickness: 1, indent: 16, endIndent: 16),
              ListTile(
-              leading: const Icon(Icons.queue, color: Color.fromRGBO(9, 159, 175, 1.0),),
+              leading: const Icon(Icons.connecting_airports, color: Color.fromRGBO(9, 159, 175, 1.0),),
               title: const Text(
-                'Status',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                 Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) =>  AddStatusPage()), // ไปยังหน้าการตั้งค่า
-              );
-              },
-            ),
-             ListTile(
-              leading: const Icon(Icons.queue, color: Color.fromRGBO(9, 159, 175, 1.0),),
-              title: const Text(
-                'Status',
+                'connect to',
                 style: TextStyle(fontSize: 18),
               ),
               onTap: () {

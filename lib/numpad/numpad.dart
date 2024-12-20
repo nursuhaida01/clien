@@ -334,62 +334,71 @@ class _NumpadState extends State<Numpad> {
   }
 
   Widget buildNumpad(TextEditingController controller) {
-    final List<String> numpadButtons = [
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
-      '7',
-      '8',
-      '9',
-      '',
-      '0',
-      'delete'
-    ];
-    final size = MediaQuery.of(context).size;
-    final fontSize = size.height * 0.03;
+  final List<String> numpadButtons = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    '',
+    '0',
+    'delete'
+  ];
+  final size = MediaQuery.of(context).size;
+  final fontSize = size.height * 0.03;
 
-    return Expanded(
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: (size.width * 0.3).clamp(50.0, 170.0),
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 30,
-          childAspectRatio: 1,
-        ),
-        itemCount: numpadButtons.length,
-        itemBuilder: (context, index) {
-          final buttonText = numpadButtons[index];
-          return ElevatedButton(
-            onPressed: () {
-              if (buttonText == 'delete') {
-                if (controller.text.isNotEmpty) {
-                  controller.text =
-                      controller.text.substring(0, controller.text.length - 1);
-                }
-              } else if (buttonText.isNotEmpty) {
+  return Expanded(
+    child: GridView.builder(
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: (size.width * 0.3).clamp(50.0, 170.0),
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 30,
+        childAspectRatio: 1,
+      ),
+      itemCount: numpadButtons.length,
+      itemBuilder: (context, index) {
+        final buttonText = numpadButtons[index];
+
+        return ElevatedButton(
+          onPressed: () {
+            if (buttonText == 'delete') {
+              // ลบข้อความตัวสุดท้าย
+              if (controller.text.isNotEmpty) {
+                controller.text =
+                    controller.text.substring(0, controller.text.length - 1);
+              }
+            } else if (buttonText == '0') {
+              // ป้องกันไม่ให้กด 0 เป็นตัวแรก
+              if (controller.text.isNotEmpty) {
                 controller.text += buttonText;
               }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: buttonText == 'delete'
-                  ? Colors.red
-                  : const Color.fromRGBO(9, 159, 175, 1.0),
-              shape: const CircleBorder(),
-              padding: EdgeInsets.zero,
+            } else if (buttonText.isNotEmpty) {
+              // เพิ่มตัวเลขอื่น ๆ
+              controller.text += buttonText;
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: buttonText == 'delete'
+                ? Colors.red
+                : const Color.fromRGBO(9, 159, 175, 1.0),
+            shape: const CircleBorder(),
+            padding: EdgeInsets.zero,
+          ),
+          child: Center(
+            child: Text(
+              buttonText == 'delete' ? 'ลบ' : buttonText,
+              style: TextStyle(fontSize: fontSize * 2.0, color: Colors.white),
             ),
-            child: Center(
-              child: Text(buttonText == 'delete' ? 'ลบ' : buttonText,
-                  style:
-                      TextStyle(fontSize: fontSize * 2.0, color: Colors.white)),
-            ),
-          );
-        },
-      ),
-    );
-  }
+          ),
+        );
+      },
+    ),
+  );
+}
 
   void _showAlertDialog(BuildContext context, String message) {
     showDialog(
