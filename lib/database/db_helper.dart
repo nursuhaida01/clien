@@ -156,6 +156,16 @@ class DatabaseHelper {
 
 
   }
+  Future<void> updateQueueStatus(int queueId, String newStatus) async {
+  final db = await instance.database;
+  await db.update(
+    'queue_tb', // ชื่อของตาราง
+    {'queue_status': newStatus}, // อัปเดตสถานะ
+    where: 'id = ?', // เงื่อนไข
+    whereArgs: [queueId], // ค่าเงื่อนไข
+  );
+}
+
    // **Status Table Operations**
 
    Future<int> insertStatus(StatusModel service) async {
