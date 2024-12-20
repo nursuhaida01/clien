@@ -188,7 +188,7 @@ class _NumpadState extends State<Numpad> {
               ),
 
               // หน้าที่สอง: กรอกชื่อและเบอร์โทร
-              Column(
+               Column(
                 children: [
                   Expanded(
                     flex: 5,
@@ -226,107 +226,94 @@ class _NumpadState extends State<Numpad> {
                             keyboardType: TextInputType.phone,
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(
-                                  13), // จำกัดตัวอักษรสูงสุด 13 ตัว
+                                  10), // จำกัดตัวอักษรสูงสุด 10 ตัว
                             ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: Row(
-                      children: [
-                        // ปุ่มกลับ | BACK
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _pageController.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Colors.red,
-                              padding: EdgeInsets.symmetric(
-                                  vertical: buttonHeight * 0.6),
-                            ),
-                            child: Text('กลับ | BACK',
-                                style: TextStyle(fontSize: fontSize)),
-                          ),
-                        ),
-                        const SizedBox(width: 10), // ระยะห่างระหว่างปุ่ม
-                        // ปุ่มยืนยัน | SUBMIT
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              final customerName = _customerNameController.text;
-                              final customerPhone =
-                                  _customerPhoneController.text;
-                              final paxText = _controller.text;
+                 Expanded(
+  flex: 1,
+  child: Row(
+    children: [
+      // ปุ่มกลับ | BACK
+      Expanded(
+        child: ElevatedButton(
+          onPressed: () {
+            _pageController.previousPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: Colors.red,
+            padding: EdgeInsets.symmetric(vertical: buttonHeight * 0.6),
+          ),
+          child: Text(
+            'กลับ | BACK',
+            style: TextStyle(fontSize: fontSize),
+          ),
+        ),
+      ),
+      const SizedBox(width: 10), // ระยะห่างระหว่างปุ่ม
+      // ปุ่มยืนยัน | SUBMIT
+      Expanded(
+        child: ElevatedButton(
+          onPressed: () async {
+            final customerName = _customerNameController.text;
+            final customerPhone = _customerPhoneController.text;
+            final paxText = _controller.text;
 
-                              if (customerName.isNotEmpty &&
-                                  customerPhone.isNotEmpty &&
-                                  paxText.isNotEmpty) {
-                                try {
-                                  final queueNumber = int.parse(
-                                      paxText); // แปลง String เป็น int
-                                  var serviceId;
-                                  final queue = QueueModel(
-                                    queueNumber: queueNumber,
-                                    customerName: customerName,
-                                    customerPhone: customerPhone,
-                                    queueStatus: 'รอรับบริการ',
-                                    queueDatetime:
-                                        DateFormat('yyyy-MM-dd HH:mm:ss')
-                                            .format(DateTime.now()),
-                                    queueCreate:
-                                        DateFormat('yyyy-MM-dd HH:mm:ss')
-                                            .format(DateTime.now()),
-                                    serviceId: widget.serviceIds ?? 0,
-                                  );
+            if (paxText.isNotEmpty) { // ตรวจสอบเฉพาะจำนวนลูกค้า
+              try {
+                final queueNumber = int.parse(paxText); // แปลง String เป็น int
+                final queue = QueueModel(
+                  queueNumber: queueNumber,
+                  customerName: customerName, // กรอกได้หรือเว้นว่าง
+                  customerPhone: customerPhone, // กรอกได้หรือเว้นว่าง
+                  queueStatus: 'รอรับบริการ',
+                  queueDatetime: DateFormat('yyyy-MM-dd HH:mm:ss')
+                      .format(DateTime.now()),
+                  queueCreate: DateFormat('yyyy-MM-dd HH:mm:ss')
+                      .format(DateTime.now()),
+                  serviceId: widget.serviceIds ?? 0,
+                );
 
-                                  // เรียกใช้งาน DatabaseHelper
-                                  await DatabaseHelper.instance
-                                      .insertQueue(queue);
+                // เรียกใช้งาน DatabaseHelper
+                await DatabaseHelper.instance.insertQueue(queue);
 
-                                  // แสดงข้อความสำเร็จ
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('บันทึกข้อมูลสำเร็จ')),
-                                  );
+                // แสดงข้อความสำเร็จ
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('บันทึกข้อมูลสำเร็จ')),
+                );
 
-                                         
+                Navigator.of(context).pop(); // ปิด Dialog หรือ Numpad
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+                );
+              }
+            } else {
+              _showAlertDialog(context, 'กรุณากรอกจำนวนลูกค้า'); // แจ้งเตือนหาก Pax ว่างเปล่า
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: const Color.fromRGBO(9, 159, 175, 1.0),
+            padding: EdgeInsets.symmetric(vertical: buttonHeight * 0.6),
+          ),
+          child: Text(
+            'ยืนยัน | SUBMIT',
+            style: TextStyle(fontSize: fontSize),
+          ),
+        ),
+      ),
+    ],
+  ),
+),
 
-
-                                  Navigator.of(context)
-                                      .pop(); // ปิด Dialog หรือ Numpad
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text('เกิดข้อผิดพลาด: $e')),
-                                  );
-                                }
-                              } else {
-                                _showAlertDialog(
-                                    context, 'กรุณากรอกข้อมูลให้ครบ');
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor:
-                                  const Color.fromRGBO(9, 159, 175, 1.0),
-                              padding: EdgeInsets.symmetric(
-                                  vertical: buttonHeight * 0.6),
-                            ),
-                            child: Text('ยืนยัน | SUBMIT',
-                                style: TextStyle(fontSize: fontSize)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ],
