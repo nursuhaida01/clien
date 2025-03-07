@@ -1,26 +1,34 @@
 class ServiceModel {
-  final int? id; // ID ของบริการ
-  final String name; // ชื่อบริการ
-  final String deletel; // หมายเลขช่องบริการ
+  final int? id;  // หรือจะเปลี่ยนชื่อเป็น serviceId ก็ได้
+  final String name;
+   final String prefix;
+  final String deletel;
 
-  ServiceModel({this.id, required this.name, required this.deletel,});
+  ServiceModel({
+    this.id,
+    required this.name,
+     required this.prefix,
+    required this.deletel,
+  });
 
-  /// แปลงข้อมูลจาก Map (SQLite) เป็น Object (Dart)
   factory ServiceModel.fromMap(Map<String, dynamic> map) {
     return ServiceModel(
-      id: map['id'], // ID ที่ได้จากฐานข้อมูล
-      name: map['name'], // ชื่อของบริการ
-      deletel: map['deletel'], // หมายเลขช่องบริการ
+      id: map['id'],
+      name: map['name'],
+      prefix: map['prefix'],
+      deletel: map['deletel'],
     );
   }
 
-  /// แปลงข้อมูลจาก Object (Dart) เป็น Map (SQLite)
+  // ถ้าจะคงชื่อเดิม 'id' ไว้ แต่เพิ่ม get serviceId แบบเดียวกัน
+  get serviceId => id;
+
   Map<String, dynamic> toMap() {
     return {
-      'id': id, // ID (ถ้าไม่มี จะถูกสร้างอัตโนมัติใน SQLite)
+      'id': id,
       'name': name,
-      'deletel': deletel, // หมายเลขช่องบริการ
-       // ชื่อบริการ
+      'prefix': prefix,
+      'deletel': deletel,
     };
   }
 }

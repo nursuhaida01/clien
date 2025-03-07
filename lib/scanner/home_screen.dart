@@ -1,6 +1,7 @@
 import 'package:client/controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 // import 'package:flutter_blue/flutter_blue.dart';
 
 import '../client.dart';
@@ -27,9 +28,14 @@ class _MyHomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // startScan();
+    clientController.getIpAddresses(); // 🔍 เริ่มต้นค้นหาเซิร์ฟเวอร์อัตโนมัติ
   }
 
+  Future<void> saveIpToHive(String ip) async {
+    var box = Hive.box('ipBox');
+    await box.put('savedIP', ip); // ✅ บันทึก IP ลง Hive
+    print("✅ IP ถูกบันทึกใน Hive: $ip");
+  }
   // ฟังก์ชันเริ่มต้นการค้นหา Bluetooth devices
   // void startScan() {
   //   setState(() {
@@ -56,15 +62,12 @@ class _MyHomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return GetBuilder<ClientController>(builder: (controller) {
       return Scaffold(
-         appBar: AppBar(
-        title: const Text('การเชื่อม'),
-        backgroundColor: const Color.fromRGBO(9, 159, 175, 1.0),
-         centerTitle: true,
-       automaticallyImplyLeading: true
-
-      ),
+        appBar: AppBar(
+            title: const Text('การเชื่อมต่อ Server',  style: TextStyle(color: Colors.white),),
+         backgroundColor: const Color.fromRGBO(9, 159, 175, 1.0),
+            centerTitle: true,
+            automaticallyImplyLeading: true),
         key: _scaffoldKey,
-      
         body: Column(
           children: <Widget>[
             Expanded(
@@ -72,6 +75,7 @@ class _MyHomePageState extends State<HomePage> {
                 padding: const EdgeInsets.only(left: 15, right: 15, top: 15),
                 child: Column(
                   children: <Widget>[
+                    // ✅ แสดงสถานะการค้นหา
                     if (controller.clientModels.isEmpty ||
                         !controller.clientModels.first.isConnected)
                       Column(
@@ -83,7 +87,15 @@ class _MyHomePageState extends State<HomePage> {
                                 if (controller.clientModels.isNotEmpty) {
                                   // เชื่อมต่อกับ clientModels ตัวแรก
                                   await controller.clientModels.first.connect();
+                                  // ✅ ดึง IP Address จาก controller
+                                  String ip = controller.addresses.isNotEmpty
+                                      ? controller.addresses[0].ip
+                                      : '0.0.0.0';
 
+                                  // ✅ บันทึก IP ลง Hive หลังจากเชื่อมต่อสำเร็จ
+                                  await saveIpToHive(ip);
+
+                                  print("Connected to $ip");
                                   // ดึงข้อมูล deviceInfo
                                   final info = await deviceInfo.androidInfo;
 
@@ -119,26 +131,69 @@ class _MyHomePageState extends State<HomePage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         if (controller.addresses.isEmpty)
-                                          Text("No Device Found")
+                                          Text(
+                                            "No Device Found",
+                                            style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold),
+                                          )
                                         else
-                                          Column(
-                                            children: [
-                                              const Text(
-                                                "Desktop",
-                                                style: TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                          Container(
+                                            margin: const EdgeInsets.symmetric(
+                                                vertical: 16.0,
+                                                horizontal: 20.0),
+                                            padding: const EdgeInsets.all(16.0),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  Colors.white,
+                                                  Colors.blue.shade50
+                                                ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
                                               ),
-                                              Text(
-                                                controller.addresses[0]
-                                                    .ip, // แสดง IP Address ของอุปกรณ์แรก
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                ),
+                                              border: Border.all(
+                                                color: const Color.fromARGB(
+                                                    255, 22, 117, 160),
+                                                width: 2.0,
                                               ),
-                                            ],
-                                          ),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.15),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                const Text(
+                                                  "Desktop",
+                                                  style: TextStyle(
+                                                    fontSize: 24,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color.fromARGB(
+                                                        255, 22, 117, 160),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  controller.addresses[0]
+                                                      .ip, // แสดง IP Address ของอุปกรณ์แรก
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.grey[700],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
                                       ])),
                             ),
                           ),
@@ -193,21 +248,15 @@ class _MyHomePageState extends State<HomePage> {
                         )
                       ],
                     ),
-                   ],
+                  ],
                 ),
               ),
             ),
 
-            const Divider(
-              height: 30,
-              thickness: 1,
-              color: Colors.black12,
-            ),
-            
             // Message Section
           ],
         ),
       );
     });
   }
-} 
+}

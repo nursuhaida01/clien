@@ -3,38 +3,19 @@
 // import 'package:get/get.dart';
 // // import 'package:flutter_blue/flutter_blue.dart';
 
+
 // import 'client.dart';
 
-// void main() {
-//   runApp(const MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Demo',
-//       theme: ThemeData(
-//         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-//         useMaterial3: true,
-//       ),
-//       home: const MyHomePage(title: 'Flutter Demo Home Page'),
-//     );
-//   }
-// }
-
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({super.key, required this.title});
+// class HomePage extends StatefulWidget {
+//   const HomePage({super.key, required this.title});
 
 //   final String title;
 
 //   @override
-//   State<MyHomePage> createState() => _MyHomePageState();
+//   State<HomePage> createState() => _MyHomePageState();
 // }
 
-// class _MyHomePageState extends State<MyHomePage> {
+// class _MyHomePageState extends State<HomePage> {
 //   final _scaffoldKey = GlobalKey<ScaffoldState>();
 //   ClientController clientController = Get.put(ClientController());
 //   final textController = TextEditingController();
@@ -43,11 +24,12 @@
 //   // List<BluetoothDevice> devices = [];
 //   bool isScanning = false;
 
-//   @override
-//   void initState() {
-//     super.initState();
-//     // startScan();
-//   }
+//  @override
+// void initState() {
+//   super.initState();
+//   clientController.getIpAddresses(); // 🔍 เริ่มต้นค้นหาเซิร์ฟเวอร์อัตโนมัติ
+// }
+
 
 //   // ฟังก์ชันเริ่มต้นการค้นหา Bluetooth devices
 //   // void startScan() {
@@ -75,12 +57,14 @@
 //   Widget build(BuildContext context) {
 //     return GetBuilder<ClientController>(builder: (controller) {
 //       return Scaffold(
+//          appBar: AppBar(
+//         title: const Text('การเชื่อม'),
+//         backgroundColor: const Color.fromARGB(255, 17, 145, 185),  centerTitle: true,
+//        automaticallyImplyLeading: true
+
+//       ),
 //         key: _scaffoldKey,
-//         appBar: AppBar(
-//           title: const Text('Server'),
-//           centerTitle: true,
-//           automaticallyImplyLeading: false,
-//         ),
+      
 //         body: Column(
 //           children: <Widget>[
 //             Expanded(
@@ -209,46 +193,7 @@
 //                         )
 //                       ],
 //                     ),
-//               Expanded(
-//   child: clientController.clientModels.isNotEmpty &&
-//           clientController.clientModels.first.messages.isNotEmpty
-//       ? ListView.builder(
-//           itemCount: clientController.clientModels.first.messages.length,
-//           itemBuilder: (context, index) {
-//             final message = clientController.clientModels.first.messages[index];
-//             final isServerMessage = message.startsWith("Server:");
-
-//             return Padding(
-//               padding: const EdgeInsets.symmetric(vertical: 4),
-//               child: Align(
-//                 alignment: isServerMessage
-//                     ? Alignment.centerLeft
-//                     : Alignment.centerRight,
-//                 child: Container(
-//                   padding: const EdgeInsets.all(10),
-//                   decoration: BoxDecoration(
-//                     color: isServerMessage
-//                         ? Colors.blue[100] // สีพื้นหลังข้อความจากเซิร์ฟเวอร์
-//                         : Colors.green[100], // สีพื้นหลังข้อความจากไคลเอนต์
-//                     borderRadius: BorderRadius.circular(10),
-//                   ),
-//                   child: Text(
-//                     message,
-//                     style: const TextStyle(fontSize: 16),
-//                   ),
-//                 ),
-//               ),
-//             );
-//           },
-//         )
-//       : const Center(
-//           child: Text(
-//             "No messages yet",
-//             style: TextStyle(fontSize: 16),
-//           ),
-//         ),
-// ),
-//   ],
+//                    ],
 //                 ),
 //               ),
 //             ),
@@ -258,43 +203,11 @@
 //               thickness: 1,
 //               color: Colors.black12,
 //             ),
+            
 //             // Message Section
-//             Container(
-//               color: Colors.grey[100],
-//               padding: const EdgeInsets.all(10),
-//               child: Row(
-//                 children: [
-//                   Expanded(
-//                     child: TextField(
-//                       controller: textController,
-//                       decoration: const InputDecoration(
-//                         labelText: "Send Message:",
-//                         border: OutlineInputBorder(),
-//                       ),
-//                     ),
-//                   ),
-//                   const SizedBox(width: 10),
-//                   IconButton(
-//                     onPressed: () {
-//                       textController.clear();
-//                       setState(() {});
-//                     },
-//                     icon: const Icon(Icons.clear),
-//                   ),
-//                   IconButton(
-//                     onPressed: () {
-//                       controller.sendMessage(textController.text);
-//                       textController.clear();
-//                       setState(() {});
-//                     },
-//                     icon: const Icon(Icons.send),
-//                   ),
-//                 ],
-//               ),
-//             ),
 //           ],
 //         ),
 //       );
 //     });
 //   }
-// }
+// } 

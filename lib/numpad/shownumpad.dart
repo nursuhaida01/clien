@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 import '../Tabs/TabData.dart';
 import '../coding/dialog.dart';
 import 'numpad.dart';
 
 class ClassNumpad {
+  // ✅ เพิ่มเมธอด loadSavedData
+  static Future<List<Map<String, String>>> loadSavedData() async {
+    var box = await Hive.openBox('savedDataBox'); // เปิด Hive Box
+    List<dynamic> rawData = box.get('savedData', defaultValue: []);
+
+    // แปลงข้อมูลให้อยู่ในรูปแบบ List<Map<String, String>>
+    List<Map<String, String>> savedData = List<Map<String, String>>.from(
+      rawData.map((item) => Map<String, String>.from(item)),
+    );
+
+    return savedData;
+  }
   static Future<void> showNumpad(
       BuildContext context, Map<String, dynamic> T1, int? serviceIds) async {
     // ดึง TabData สำหรับข้อมูลสาขาและเคาน์เตอร์
     final tabData = TabData.of(context);
+  List<Map<String, String>> savedData = await loadSavedData();
 
-    // ตรวจสอบว่า tabData ไม่เป็น null
+    // ตรวจสอบว่า tabData ไม่เป็น nullA
     if (tabData == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -51,7 +65,6 @@ class ClassNumpad {
                           onSubmit: (pax, name, phone) async {
                             try {
                             
-
                               // แสดงข้อความสำเร็จ
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -69,7 +82,7 @@ class ClassNumpad {
                               );
                             }
                           },
-                          T1: T1, serviceIds: serviceIds,
+                          T1: T1, serviceIds: serviceIds,  savedData: savedData, 
                         ),
                       ),
                     ],

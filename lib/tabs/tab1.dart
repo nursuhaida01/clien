@@ -59,23 +59,6 @@ class _Tab1State extends State<Tab1> {
     final provider = Provider.of<QueueProvider>(context, listen: false);
     provider.fetchServices();
 
-    clientModel = ClientModel(
-      hostname: '192.168.0.104',
-      port: 9000,
-      onData: (data) {
-        debugPrint('Data received: ${String.fromCharCodes(data)}');
-      },
-      onError: (error) {
-        debugPrint('Error: $error');
-      },
-      onStatusChange: (status) {
-        debugPrint('Status: $status');
-      },
-    );
-    // เชื่อมต่อกับ server
-    clientModel.connect();
-    print("ccccccc");
-
     // ✅ ดึง IP จาก Hive
     loadSavedIpAndConnect();
     initPlatformState();
@@ -312,8 +295,7 @@ class _Tab1State extends State<Tab1> {
                   final service = provider.services[index];
                   final serviceId = service.serviceId;
                   final hiveData = Provider.of<QueueProvider>(context);
-                  final countWaiting =
-                      provider.countWaitingByService[serviceId] ?? 0;
+                  final countWaiting = provider.countWaitingByService[serviceId] ?? 0;
                   final queuesOfService = TQOKK[serviceId] ?? [];
                   final waitingOnly = queuesOfService
                       .where((q) => q['queue_status'] == 'รอรับบริการ')
@@ -664,31 +646,19 @@ class _Tab1State extends State<Tab1> {
                                             customerName: customerName,
                                             customerPhone: customerPhone,
                                             queueStatus: 'รอรับบริการ',
-                                            queueDatetime: DateFormat(
-                                                    'yyyy-MM-dd HH:mm:ss')
-                                                .format(DateTime.now()),
-                                            queueCreate: DateFormat(
-                                                    'yyyy-MM-dd HH:mm:ss')
-                                                .format(DateTime.now()),
+                                            queueDatetime: DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now()),
+                                            queueCreate: DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now()),
                                             serviceId: serviceId,
                                             queueNo: '',
                                           );
 
-                                          final insertedId =
-                                              await DatabaseHelper.instance
-                                                  .insertQueue(queue);
-                                          print(
-                                              "🎫 ID ของคิวที่สร้าง: $insertedId");
+                                          final insertedId = await DatabaseHelper.instance.insertQueue(queue);
+                                          print( "🎫 ID ของคิวที่สร้าง: $insertedId");
 
-                                          final updatedQueue =
-                                              await DatabaseHelper.instance
-                                                  .getQueueById(insertedId);
-                                          print(
-                                              "📋 ข้อมูล Queue ที่ได้จาก Database: $updatedQueue");
+                                          final updatedQueue =await DatabaseHelper.instance.getQueueById(insertedId);
+                                          print("📋 ข้อมูล Queue ที่ได้จาก Database: $updatedQueue");
 
-                                          await printnewap.sample(
-                                              context, updatedQueue, savedData);
-
+                                          await printnewap.sample(context, updatedQueue, savedData);
                                           String queueMessage =
                                               "กำลังพิมพ์บัตรคิว\nPrint Ticket";
                                           await DialogHelper.showInfoDialog(
@@ -706,6 +676,7 @@ class _Tab1State extends State<Tab1> {
                                                 context,
                                                 {'key': 'value'},
                                                 service.id);
+                                          
                                           } catch (e) {
                                             print("❌ Error แสดง Numpad: $e");
                                             ScaffoldMessenger.of(context)
@@ -724,13 +695,10 @@ class _Tab1State extends State<Tab1> {
                                                   Text('เกิดข้อผิดพลาด: $e')),
                                         );
                                       } finally {
-                                        await Future.delayed(
-                                            Duration(seconds: 1));
-
+                                        await Future.delayed(Duration(milliseconds: 100));
                                         // setState(() {
                                         //   _isLoading = false;
                                         // });
-
                                         await fetchCallerQueueAll();
                                         await fetchSearchQueue();
                                         await provider.reloadServices();
@@ -759,6 +727,8 @@ class _Tab1State extends State<Tab1> {
                                   ),
                                 ),
 
+                                
+                                
                                 SizedBox(width: size.width * 0.02),
                                 if (filteredT2OK.isNotEmpty) ...[
                                   // ปุ่มรับบริการ
@@ -1011,8 +981,7 @@ class _Tab1State extends State<Tab1> {
                                                   message, // แสดงข้อความที่มี Prefix
                                               icon: Icons.queue,
                                             );
-                                            clientModel.write(
-                                                message); // โหลดข้อมูลใหม่
+                                            clientModel.write( message); // โหลดข้อมูลใหม่
                                           } else {
                                             // แจ้งเตือนว่าไม่มีคิว
                                             await DialogHelper.showInfoDialog(

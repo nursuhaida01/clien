@@ -1,13 +1,12 @@
+import 'package:client/queue.dart';
 import 'package:flutter/material.dart';
 
 import 'Service/Service.dart';
-import 'Status/Status.dart';
-import 'display_data_page.dart';
+import 'queue/queue.dart';
 import 'scanner/home_screen.dart';
 import 'sender.dart';
 import 'setting/setting.dart';
 import 'tabs/tes.dart';
-
 
 class SidebarMenu extends StatelessWidget {
   const SidebarMenu({super.key});
@@ -16,20 +15,24 @@ class SidebarMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: Container(
-        color: Colors.grey[200], // สีพื้นหลังของ Sidebar
-        child: ListView(
-          padding: EdgeInsets.zero,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF099FAF), Color(0xFF099FAF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color.fromARGB(255, 54, 137, 200), Color.fromARGB(255, 8, 181, 234)],
+                  colors: [Color(0xFF099FAF), Color(0xFF099FAF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   CircleAvatar(
                     radius: 30,
@@ -37,12 +40,12 @@ class SidebarMenu extends StatelessWidget {
                     child: Icon(
                       Icons.account_circle,
                       size: 40,
-                      color: Color.fromRGBO(9, 159, 175, 1.0),
+                      color: Color(0xFF099FAF),
                     ),
                   ),
                   SizedBox(width: 16),
                   Text(
-                    'เมนูการใช้งาน',
+                    'การตั้งค่า',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -52,94 +55,81 @@ class SidebarMenu extends StatelessWidget {
                 ],
               ),
             ),
-             ListTile(
-              leading: const Icon(Icons.home, color: Color.fromRGBO(9, 159, 175, 1.0),),
-              title: const Text(
-                'Home',
-                style: TextStyle(fontSize: 18),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                children: [
+                  _buildMenuCard(
+                    context,
+                    icon: Icons.queue,
+                    title: 'Queue list',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => DisplayDataPage()),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context,
+                    icon: Icons.miscellaneous_services,
+                    title: 'Service Management',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => AddServicePage()),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context,
+                    icon: Icons.print,
+                    title: 'Printing',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        // MaterialPageRoute(builder: (context) => SenderApp()),
+                         MaterialPageRoute(builder: (context) => const SettingScreen()),
+                      );
+                    },
+                  ),
+                  _buildMenuCard(
+                    context,
+                    icon: Icons.connecting_airports,
+                    title: 'Connect to',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomePage(title: '')),
+                      );
+                    },
+                  ),
+                ],
               ),
-              onTap: () {
-                Navigator.pop(context); // ปิด Drawer
-
-              },
-            ),
-            const Divider(thickness: 1, indent: 16, endIndent: 16), // เส้นแบ่ง
-            ListTile(
-              leading: const Icon(Icons.queue, color: Color.fromRGBO(9, 159, 175, 1.0),),
-              title: const Text(
-                'Queue',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                 Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) =>  DisplayDataPage()), // ไปยังหน้าการตั้งค่า
-              );
-              },
-            ),
-             const Divider(thickness: 1, indent: 16, endIndent: 16), // เส้นแบ่ง
-            ListTile(
-              leading: const Icon(Icons.miscellaneous_services, color: Color.fromRGBO(9, 159, 175, 1.0),),
-              title: const Text(
-                'Service',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                 Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) =>  AddServicePage()), // ไปยังหน้าการตั้งค่า
-              );
-              },
-            ),
-           
-            const Divider(thickness: 1, indent: 16, endIndent: 16), // เส้นแบ่ง
-            ListTile(
-              leading: const Icon(Icons.print, color: Color.fromRGBO(9, 159, 175, 1.0),),
-              title: const Text(
-                'Print settings',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                 Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) =>  SenderApp()), // ไปยังหน้าการตั้งค่า
-              );
-              },
-            ),
-            //  ListTile(
-            //   leading: const Icon(Icons.queue, color: Color.fromRGBO(9, 159, 175, 1.0),),
-            //   title: const Text(
-            //     'Status',
-            //     style: TextStyle(fontSize: 18),
-            //   ),
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //      Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) =>  AddStatusPage()), // ไปยังหน้าการตั้งค่า
-            //   );
-            //   },
-            // ),
-            const Divider(thickness: 1, indent: 16, endIndent: 16),
-             ListTile(
-              leading: const Icon(Icons.connecting_airports, color: Color.fromRGBO(9, 159, 175, 1.0),),
-              title: const Text(
-                'connect to',
-                style: TextStyle(fontSize: 18),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                 Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) =>  HomePage(title: '',)), // ไปยังหน้าการตั้งค่า
-              );
-              },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCard(BuildContext context,
+      {required IconData icon, required String title, required VoidCallback onTap}) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF099FAF)),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        onTap: onTap,
       ),
     );
   }

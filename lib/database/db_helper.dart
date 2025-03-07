@@ -8,6 +8,7 @@ import '../model/status_model.dart';
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
   static Database? _database;
+  
 
   DatabaseHelper._privateConstructor();
 
@@ -17,19 +18,102 @@ class DatabaseHelper {
     return _database!;
   }
 
-  Future<Database> _initDatabase() async {
+   Future<Database> _initDatabase() async {
     final databasePath = await getDatabasesPath();
-    final path = join(databasePath, 'queue.db'); // ชื่อไฟล์ฐานข้อมูล
-
+    final path = join(databasePath, 'queue.db');
     return await openDatabase(
       path,
-      version: 2,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
+      version: 1,
+      onCreate: (db, version) async {
+         await db.execute('''
+      CREATE TABLE service_tb (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        prefix TEXT NOT NULL,
+        deletel TEXT NOT NULL
+      )
+    ''');
+        await db.execute('''
+          CREATE TABLE queue_tb (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            queue_no INTEGER NOT NULL, 
+            queue_number INTEGER NOT NULL,
+            customer_name TEXT NULL,
+            customer_phone TEXT,
+            queue_status TEXT NOT NULL,
+            queue_datetime TEXT,
+            service_id INTEGER,
+            queue_create TEXT NOT NULL
+           
+          )
+        ''');
+        
+      },
     );
   }
-  
 
+Future<QueueModel?> getFirstQueueByStatus(String status) async {
+  final db = await database;
+  final List<Map<String, dynamic>> result = await db.query(
+    'queue_tb',
+    where: 'queue_status = ?',
+    whereArgs: [status],
+    orderBy: 'id ASC', // ✅ เรียงลำดับตามคิวแรก
+    limit: 1,
+  );
+
+  if (result.isNotEmpty) {
+    return QueueModel.fromMap(result.first);
+  } else {
+    return null;
+  }
+}
+Future<List<Map<String, dynamic>>> getQueuesByStatus({
+  required int serviceId,
+  required String status,
+}) async {
+  final db = await database; // ดึงอินสแตนซ์ของฐานข้อมูล
+
+  // 🔍 ดึงข้อมูลคิวตาม serviceId และ queue_status
+  final List<Map<String, dynamic>> result = await db.query(
+    'queue_tb', // ชื่อตารางคิว
+    where: 'service_id = ? AND queue_status = ?', // เงื่อนไข WHERE
+    whereArgs: [serviceId, status], // ค่าที่จะใส่ในเงื่อนไข
+    orderBy: 'id ASC', // เรียงลำดับจาก ID น้อยไปมาก (คิวถัดไป)
+  );
+
+  return result; // ส่งคืนข้อมูลที่ได้
+}
+
+Future<QueueModel?> getCallingQueueByService(int serviceId) async {
+  final db = await database;
+  final List<Map<String, dynamic>> result = await db.query(
+    'queue_tb',
+    where: 'queue_status = ? AND service_id = ?',
+    whereArgs: ['กำลังเรียกคิว', serviceId],
+  );
+
+  if (result.isNotEmpty) {
+    return QueueModel.fromMap(result.first);
+  } else {
+    return null;
+  }
+}
+Future<QueueModel?> getQueueByIdAndService(int queueId, int serviceId) async {
+  final db = await database;
+  final List<Map<String, dynamic>> result = await db.query(
+    'queue_tb',
+    where: 'id = ? AND service_id = ?',
+    whereArgs: [queueId, serviceId],
+    
+  );
+
+  if (result.isNotEmpty) {
+    return QueueModel.fromMap(result.first);
+  } else {
+    return null;
+  }
+}
    Future<List<QueueModel>> queryByStatus(String status) async {
   final db = await database;
   final List<Map<String, dynamic>> maps = await db.query(
@@ -41,6 +125,8 @@ class DatabaseHelper {
   return List.generate(maps.length, (i) {
     return QueueModel(
       id: maps[i]['id'],
+     queueNo: maps[i]['queue_no'] ?? 'N/A',
+
       queueNumber: maps[i]['queue_number'], // ใช้ฟิลด์ queue_number ตามตาราง
       customerName: maps[i]['customer_name'], // ใช้ฟิลด์ customer_name ตามตาราง
       customerPhone: maps[i]['customer_phone'],
@@ -97,41 +183,69 @@ class DatabaseHelper {
   )
 ''');
 
-      await db.execute('''
-      CREATE TABLE TB_status (
-        status_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        status_name TEXT NOT NULL
-       
-      )
-    ''');
-     await db.execute('''
-      CREATE TABLE TB_queue (
-        queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        queue_number INTEGER NOT NULL,
-        customer_name TEXT NOT NULL,
-        customer_phone TEXT,
-        queue_status TEXT NOT NULL,
-        queue_datetime TEXT,
-        queue_create TEXT NOT NULL
-       
-      )
-    ''');
-  
+    
+   
     
   
    // ใช้คำสั่งสร้างตาราง
   }
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-  if (oldVersion < 2) {
-    await db.execute('ALTER TABLE queue_tb ADD COLUMN datetime TEXT');
-  }
+
+
+Future<List<QueueModel>> queryAllQueues() async {
+  final db = await database;
+  final List<Map<String, dynamic>> result = await db.query('queue_tb');
+  return result.map((map) => QueueModel.fromMap(map)).toList();
 }
+Future<int> insertQueue(QueueModel queue) async {
+  final db = await instance.database;
 
+  // ดึง prefix จาก service_tb
+  final serviceResult = await db.query(
+    'service_tb',
+    columns: ['prefix', 'deletel'],
+    where: 'id = ?',
+    whereArgs: [queue.serviceId],
+  );
 
-  Future<int> insertQueue(QueueModel queue) async {
-    Database db = await instance.database;
-    return await db.insert('queue_tb', queue.toMap());
+  if (serviceResult.isEmpty) {
+    throw Exception('Service not found for id: ${queue.serviceId}');
   }
+
+  final prefix = serviceResult.first['prefix'] as String;
+ // แปลง deletel เป็น int
+  final deletel = int.tryParse(serviceResult.first['deletel'].toString()) ?? 0;
+
+  // ดึง queue_no ที่เป็นของ prefix และแปลงเป็นลำดับตัวเลข
+  final queueResult = await db.rawQuery(
+    '''
+    SELECT queue_no 
+    FROM queue_tb 
+    WHERE service_id = ?
+    AND queue_no LIKE ?
+    ORDER BY id DESC 
+    LIMIT 1
+    ''',
+    [queue.serviceId, '$prefix%'], // กรอง queue_no ที่เริ่มต้นด้วย prefix
+  );
+
+  // แยกตัวเลขลำดับของ queue_no ล่าสุด
+  int latestNumber = 0;
+  if (queueResult.isNotEmpty && queueResult.first['queue_no'] != null) {
+    final latestQueueNo = queueResult.first['queue_no'] as String;
+    final numberPart = latestQueueNo.replaceAll(prefix, ''); // ตัด prefix ออก
+    latestNumber = int.tryParse(numberPart) ?? 0;
+  }
+
+  // สร้าง queue_no ใหม่ และเติมเลข 0 ข้างหน้าจนเป็น 3 หลัก
+  final newQueueNo = '$prefix${(latestNumber + 1).toString().padLeft(deletel, '0')}';
+
+  // เพิ่ม queue_no ในข้อมูล
+  final queueData = queue.toMap();
+  queueData['queue_no'] = newQueueNo;
+
+  // เพิ่มข้อมูลใน queue_tb
+  return await db.insert('queue_tb', queueData);
+}
 
   Future<List<QueueModel>> queryAll(String s) async {
     Database db = await instance.database;
@@ -156,17 +270,19 @@ class DatabaseHelper {
 
 
   }
-  Future<void> updateQueueStatus(int queueId, String newStatus) async {
-  final db = await instance.database;
+ Future<void> updateQueueStatus(int queueId, String newStatus, String updateTime) async {
+  final db = await database;
   await db.update(
-    'queue_tb', // ชื่อของตาราง
-    {'queue_status': newStatus}, // อัปเดตสถานะ
-    where: 'id = ?', // เงื่อนไข
-    whereArgs: [queueId], // ค่าเงื่อนไข
+    'queue_tb',
+    {
+      'queue_status': newStatus,
+      'queue_datetime': updateTime, // ⏳ บันทึกเวลาอัปเดต
+    },
+    where: 'id = ?',
+    whereArgs: [queueId],
   );
 }
 
-   // **Status Table Operations**
 
    Future<int> insertStatus(StatusModel service) async {
     Database db = await instance.database;
@@ -205,6 +321,7 @@ class DatabaseHelper {
     final data = await db.query('service_tb');
     return data.map((map) => ServiceModel.fromMap(map)).toList();
   }
+  
 
   Future<int> updateService(ServiceModel service) async {
     Database db = await instance.database;
@@ -319,6 +436,66 @@ Future<Map<int, Map<String, dynamic>>?> fetchLatestQueueByService() async {
     latestQueues[row['service_id'] as int] = row;
   }
   return latestQueues;
+
+}
+Future<void> clearAll(String tableName) async {
+  final db = await instance.database;
+  await db.delete(tableName); // ลบข้อมูลทั้งหมดในตาราง
+  await db.rawQuery("DELETE FROM sqlite_sequence WHERE name = ?", [tableName]); // รีเซ็ตค่า AUTO_INCREMENT
+}
+
+Future<void> clearAllServicesAndResetId() async {
+    final db = await database; // เชื่อมต่อฐานข้อมูล
+    await db.delete('service_tb'); // ลบข้อมูลทั้งหมดในตาราง
+    await db.rawQuery("DELETE FROM sqlite_sequence WHERE name = 'service_tb'"); // รีเซ็ตค่า AUTO_INCREMENT
+  }
+  // Queue
+
+Future<Map<String, dynamic>?> callQueueByQueueNo(String queueNo) async {
+  final db = await database; // เชื่อมต่อกับฐานข้อมูล
+  try {
+    // ดึงข้อมูลคิวจาก queue_tb โดยใช้ queue_no
+    final result = await db.query(
+      'queue_tb', // ชื่อตาราง
+      where: 'queue_no = ?', // เงื่อนไข
+      whereArgs: [queueNo], // ค่าเงื่อนไข
+    );
+
+    if (result.isNotEmpty) {
+      // อัปเดตสถานะคิวเป็น "กำลังเรียกคิว"
+      await db.update(
+        'queue_tb', // ชื่อตาราง
+        {'queue_status': 'กำลังเรียกคิว'}, // ค่าอัปเดต
+        where: 'queue_no = ?', // เงื่อนไข
+        whereArgs: [queueNo], // ค่าเงื่อนไข
+      );
+
+      // คืนค่าข้อมูลคิวที่ถูกดึง
+      return result.first;
+    } else {
+      return null; // หากไม่มีข้อมูล
+    }
+  } catch (e) {
+    print('Error in callQueueByQueueNo: $e');
+    return null;
+  }
+}
+
+Future<QueueModel> getQueueById(int id) async {
+  final db = await instance.database;
+
+  // ดึงข้อมูลจากฐานข้อมูล
+  final result = await db.query(
+    'queue_tb',
+    where: 'id = ?',
+    whereArgs: [id],
+  );
+
+  if (result.isNotEmpty) {
+    return QueueModel.fromMap(result.first);
+  } else {
+    throw Exception('Queue not found for id: $id');
+  }
 }
 
 

@@ -13,7 +13,7 @@
     <!-- Android 12+ Specific Permission -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <application
-        android:label="client"
+        android:label="AP Queue"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

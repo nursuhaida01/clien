@@ -2,8 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:network_info_plus/network_info_plus.dart';
+import 'package:ping_discover_network_forked/ping_discover_network_forked.dart';
 
-typedef Unit8ListCallback = Function(Uint8List data);
+typedef Uint8ListCallback = Function(Uint8List data);
 typedef DynamicCallback = Function(dynamic data);
 
 final deviceInfo = DeviceInfoPlugin();
@@ -11,11 +13,13 @@ final deviceInfo = DeviceInfoPlugin();
 class ClientModel {
   String hostname;
   int port;
-  Unit8ListCallback onData;
+  Uint8ListCallback onData;
   DynamicCallback onError;
-  DynamicCallback onStatusChange; // Callback สำหรับการเปลี่ยนสถานะ
-  WebSocket? _socket;
-  List<String> messages = [];
+  DynamicCallback onStatusChange;
+  Socket? socket;
+
+  bool isConnected = false;
+  String connectionStatus = "Disconnected";
 
   ClientModel({
     required this.hostname,
@@ -25,84 +29,122 @@ class ClientModel {
     required this.onStatusChange,
   });
 
-  bool isConnected = false;
-  String connectionStatus = "Disconnected";
-  Socket? socket;
+  /// ✅ **ค้นหาเซิร์ฟเวอร์อัตโนมัติ** และเชื่อมต่อ
+  static Future<ClientModel?> autoConnect({
+    required int port,
+    required Uint8ListCallback onData,
+    required DynamicCallback onError,
+    required DynamicCallback onStatusChange,
+  }) async {
+    final networkInfo = NetworkInfo();
+    String? wifiIP = await networkInfo.getWifiIP();
 
- Future<void> connect() async {
-  if (isConnected) {
-    debugPrint("Already connected to $hostname:$port");
-    return;
+    if (wifiIP == null) {
+      debugPrint("❌ ไม่สามารถดึง IP Address ของเครือข่ายได้");
+      return null;
+    }
+
+    String subnet = wifiIP.substring(0, wifiIP.lastIndexOf('.'));
+    debugPrint("🔍 ค้นหา Server ในเครือข่าย: $subnet.xxx:$port");
+
+    final stream = NetworkAnalyzer.discover2(subnet, port);
+    await for (final NetworkAddress addr in stream) {
+      if (addr.exists) {
+        debugPrint("✅ พบเซิร์ฟเวอร์ที่ ${addr.ip}");
+
+        final client = ClientModel(
+          hostname: addr.ip,
+          port: port,
+          onData: onData,
+          onError: onError,
+          onStatusChange: onStatusChange,
+        );
+
+        await client.connect();
+        return client;
+      }
+    }
+
+    debugPrint("❌ ไม่พบเซิร์ฟเวอร์ในเครือข่าย");
+    return null;
   }
 
-  try {
-    connectionStatus = "Connecting...";
-    onStatusChange(connectionStatus);
+  /// ✅ **เชื่อมต่อไปยังเซิร์ฟเวอร์**
+  Future<void> connect() async {
+    if (isConnected) {
+      debugPrint("✅ เชื่อมต่อไปแล้ว: $hostname:$port");
+      return;
+    }
 
-    // Attempt to connect with timeout
-    socket = await Socket.connect(hostname, port)
-        .timeout(const Duration(seconds: 10), onTimeout: () {
-      throw Exception("Connection timeout to $hostname:$port");
-    });
+    try {
+      connectionStatus = "🔄 กำลังเชื่อมต่อ...";
+      onStatusChange(connectionStatus);
 
-    connectionStatus = "Connected to $hostname:$port";
-    isConnected = true;
-    onStatusChange(connectionStatus);
+      socket = await Socket.connect(hostname, port)
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        throw Exception("❌ การเชื่อมต่อล้มเหลว: Timeout");
+      });
 
-    // Listen to server messages
-    socket!.listen(
-      (Uint8List data) {
-        final message = String.fromCharCodes(data).trim();
-        if (message.isNotEmpty) {
-          messages.add("Server: $message");
-          onData(data);
-          debugPrint("Message received from server: $message");
-        }
-      },
-      onError: (error) {
-        connectionStatus = "Error: $error";
-        onStatusChange(connectionStatus);
-        socket!.destroy();
-        isConnected = false;
-      },
-      onDone: () {
-        isConnected = false;
-        connectionStatus = "Connection closed by server.";
-        onStatusChange(connectionStatus);
-      },
-    );
-  } catch (e) {
-    connectionStatus = "Connection failed: $e";
-    onStatusChange(connectionStatus);
-    isConnected = false;
+      connectionStatus = "✅ เชื่อมต่อสำเร็จ: $hostname:$port";
+      isConnected = true;
+      onStatusChange(connectionStatus);
+
+      socket!.listen(
+        (Uint8List data) {
+          final message = String.fromCharCodes(data).trim();
+          if (message.isNotEmpty) {
+            onData(data);
+            debugPrint("📩 ข้อมูลจากเซิร์ฟเวอร์: $message");
+          }
+        },
+        onError: (error) {
+          connectionStatus = "❌ ข้อผิดพลาด: $error";
+          onStatusChange(connectionStatus);
+          socket!.destroy();
+          isConnected = false;
+        },
+        onDone: () {
+          connectionStatus = "❌ การเชื่อมต่อถูกปิดโดยเซิร์ฟเวอร์";
+          onStatusChange(connectionStatus);
+          isConnected = false;
+        },
+      );
+    } catch (e) {
+      connectionStatus = "❌ ไม่สามารถเชื่อมต่อ: $e";
+      onStatusChange(connectionStatus);
+      isConnected = false;
+    }
   }
+  /// 🛠️ **ฟังก์ชันเชื่อมต่อใหม่อัตโนมัติ**
+Future<void> reconnect() async {
+  if (isConnected) return; // ถ้าเชื่อมต่ออยู่แล้ว ไม่ต้อง reconnect
+
+  debugPrint("🔄 กำลังพยายามเชื่อมต่อใหม่...");
+  await Future.delayed(const Duration(seconds: 3)); // ⏳ รอ 5 วินาที
+
+  connect(); // ลองเชื่อมต่อใหม่
 }
 
-  
 
+  /// ✅ **ส่งข้อความไปยังเซิร์ฟเวอร์**
   void write(String message) {
     if (socket != null && isConnected) {
       socket!.write(message);
-      messages.add("client: $message"); // บันทึกข้อความของไคลเอนต์
+      debugPrint("📤 ส่งข้อความ: $message");
     } else {
-      debugPrint("Cannot send message. No active connection.");
+      debugPrint("❌ ไม่สามารถส่งข้อความ: ไม่มีการเชื่อมต่อ");
     }
   }
 
-  void disconnect(AndroidDeviceInfo androidDeviceInfo) {
+  /// ✅ **ตัดการเชื่อมต่อ**
+  void disconnect() {
     try {
-      final message =
-          "${androidDeviceInfo.brand} ${androidDeviceInfo.device} got disconnected";
-      write(message);
-
-      if (socket != null) {
-        socket!.destroy();
-      }
+      socket?.destroy();
       isConnected = false;
-      connectionStatus = "Disconnected";
+      connectionStatus = "❌ ตัดการเชื่อมต่อแล้ว";
       onStatusChange(connectionStatus);
     } catch (e) {
-      debugPrint("Error during disconnect: $e");
+      debugPrint("❌ ข้อผิดพลาดขณะตัดการเชื่อมต่อ: $e");
     }
   }
 }

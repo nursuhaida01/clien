@@ -3,8 +3,7 @@ import 'tabs/tab1.dart';
 import 'tabs/tab2.dart';
 import 'tabs/tab3.dart';
 import 'settings.dart';
-import 'sidebar_menu.dart'; 
-
+import 'sidebar_menu.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -15,61 +14,105 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+
   late TabController _tabController;
+  final filteredQueues1Notifier = ValueNotifier<List<Map<String, dynamic>>>([]);
+  final filteredQueues3Notifier = ValueNotifier<List<Map<String, dynamic>>>([]);
+  final filteredQueuesANotifier = ValueNotifier<List<Map<String, dynamic>>>([]);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this); // กำหนดจำนวนแท็บเป็น 3
+    WidgetsBinding.instance.addObserver(this); // ✅ สังเกตการเปลี่ยนแปลง
+    _tabController = TabController(length: 3, vsync: this);
+    _refreshPage(); // ✅ โหลดข้อมูลครั้งแรก
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // ✅ ยกเลิก Observer
     _tabController.dispose();
     super.dispose();
+  }
+
+  // ✅ ฟังก์ชันนี้จะถูกเรียกเมื่อกลับมาหน้านี้
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPage();
+    }
+  }
+
+  // ✅ ฟังก์ชันสำหรับโหลดข้อมูลใหม่
+  Future<void> _refreshPage() async {
+    setState(() {
+      filteredQueues1Notifier.value = [];
+      filteredQueues3Notifier.value = [];
+      filteredQueuesANotifier.value = [];
+    });
+
+    // จำลองการโหลดข้อมูลใหม่
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    setState(() {
+      filteredQueues1Notifier.value = [{'queue_no': 'A001'}];
+      filteredQueues3Notifier.value = [{'queue_no': 'B002'}];
+      filteredQueuesANotifier.value = [{'queue_no': 'C003'}];
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromRGBO(9, 159, 175, 1.0),
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings), // ไอคอนตั้งค่า
-            onPressed: () {
-              // เรียก Popup การตั้งค่าจากไฟล์ settings_popup.dart
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return const SettingsPopup(); // ใช้ Widget Popup ที่แยกไว้
-                },
-              );
-            },
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF099FAF), Color(0xFF046D8E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-        ],
+        ),
+        title: Text(widget.title, style: const TextStyle(color: Colors.white)),
         bottom: TabBar(
           controller: _tabController,
-          tabs: [
+          indicatorColor: const Color.fromARGB(255, 255, 246, 246),
+          indicatorWeight: 4,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
             Tab(text: 'เรียกคิว'),
             Tab(text: 'คิวรอ'),
             Tab(text: 'คิวพัก'),
           ],
         ),
       ),
-      drawer: const SidebarMenu(), // Sidebar เมนูด้านซ้าย
+      drawer: const SidebarMenu(),
       body: TabBarView(
         controller: _tabController,
         children: [
-          Tab1(), // ใช้ Tab1Page
-          Tab2(), // ใช้ Tab2Page
-          Tab3(), // ใช้ Tab3Page
+          Tab1(
+            filteredQueues1Notifier: filteredQueues1Notifier,
+            filteredQueues3Notifier: filteredQueues3Notifier,
+            filteredQueuesANotifier: filteredQueuesANotifier,
+          ),
+          Tab2(
+            tabController: _tabController,
+            filteredQueues1Notifier: filteredQueues1Notifier,
+            filteredQueues3Notifier: filteredQueues3Notifier,
+            filteredQueuesANotifier: filteredQueuesANotifier,
+          ),
+          Tab3(
+            tabController: _tabController,
+            filteredQueues1Notifier: filteredQueues1Notifier,
+            filteredQueues3Notifier: filteredQueues3Notifier,
+            filteredQueuesANotifier: filteredQueuesANotifier,
+          ),
         ],
       ),
     );
   }
-  
-  
 }
